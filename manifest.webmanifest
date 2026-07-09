@@ -1,0 +1,19 @@
+{
+  "name": "家計簿",
+  "short_name": "家計簿",
+  "description": "銀行、カード、PayPay、Amazon、現金をまとめて管理する家計簿",
+  "lang": "ja",
+  "start_url": "./kakeibo_app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#207060",
+  "icons": [
+    {
+      "src": "./kakeibo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

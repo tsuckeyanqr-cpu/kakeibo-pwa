@@ -1,4 +1,4 @@
-const CACHE_NAME = "kakeibo-pwa-v1";
+const CACHE_NAME = "kakeibo-pwa-v5";
 const APP_FILES = [
   "./index.html",
   "./kakeibo_app.html",

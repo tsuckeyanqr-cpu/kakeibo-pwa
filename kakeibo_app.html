@@ -215,7 +215,7 @@
 
     .category-row:last-child, .trend-row:last-child { border-bottom: 0; }
     .category-row span, .trend-row span { color: var(--muted); font-size: 13px; }
-    button.category-row {
+    button.category-row, button.trend-row {
       width: 100%;
       min-height: 58px;
       padding: 9px 10px;
@@ -224,8 +224,10 @@
       background: transparent;
       text-align: left;
       white-space: normal;
+      cursor: pointer;
+      font: inherit;
     }
-    button.category-row:hover { background: #f3f6f1; border-color: var(--line); }
+    button.category-row:hover, button.trend-row:hover { background: #f3f6f1; border-color: var(--line); }
     button.category-row.active {
       background: #e8f1e9;
       border-color: #9bb49e;
@@ -236,6 +238,162 @@
       gap: 2px;
       text-align: right;
       font-variant-numeric: tabular-nums;
+    }
+    .category-trend {
+      display: grid;
+      gap: 12px;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+    }
+
+    .chart-legend button {
+      min-height: 30px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-legend button[aria-pressed="true"] {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .chart-swatch {
+      width: 18px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(31, 41, 51, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      min-height: 320px;
+      overflow: hidden;
+    }
+
+    .category-trend svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 320px;
+    }
+
+    .chart-axis,
+    .chart-grid,
+    .chart-frame {
+      stroke: #c8d0c5;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .chart-grid { opacity: 0.55; }
+    .chart-label {
+      fill: var(--muted);
+      font-size: 12px;
+    }
+
+    .chart-area {
+      stroke: rgba(31, 41, 51, 0.2);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .chart-point {
+      stroke: #fff;
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .chart-tooltip {
+      margin: 0;
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .expense-pie {
+      display: grid;
+      grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #edf0ea;
+    }
+
+    .pie-chart {
+      width: 100%;
+      max-width: 260px;
+      aspect-ratio: 1;
+      justify-self: center;
+    }
+
+    .pie-chart svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .pie-slice {
+      stroke: #fff;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .pie-center-label {
+      fill: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+
+    .pie-center-sub {
+      fill: var(--muted);
+      font-size: 11px;
+      text-anchor: middle;
+    }
+
+    .pie-legend {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .pie-legend-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .pie-legend-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .pie-legend-value {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      text-align: right;
     }
     .amount.expense { color: var(--red); }
     .amount.income { color: var(--green); }
@@ -342,6 +500,7 @@
 
     @media (max-width: 1080px) {
       .toolbar, .summary, .grid, .settings-grid, .cash-form, .sync-form { grid-template-columns: 1fr; }
+      .expense-pie { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -405,13 +564,32 @@
       <div class="metric"><span>明細数</span><strong id="rowCount">0</strong></div>
     </section>
 
+    <section class="panel">
+      <div class="panel-head">
+        <h2>カテゴリ別推移</h2>
+        <button id="chartResetBtn" type="button">すべて表示</button>
+      </div>
+      <div class="content category-trend">
+        <div id="chartLegend" class="chart-legend" aria-label="表示するカテゴリ"></div>
+        <div id="categoryTrendChart" class="chart-wrap" aria-label="カテゴリ別の月別支出推移"></div>
+        <p id="chartTooltip" class="chart-tooltip" aria-live="polite"></p>
+      </div>
+    </section>
+
     <section class="grid">
       <aside class="panel">
         <div class="panel-head">
           <h2>カテゴリ別</h2>
           <button id="recategorizeBtn" type="button">再分類</button>
         </div>
-        <div class="content"><div id="categoryList" class="category-list" role="tablist" aria-label="カテゴリで明細を絞り込む"></div></div>
+        <div class="content">
+          <div id="categoryList" class="category-list" role="tablist" aria-label="カテゴリで明細を絞り込む"></div>
+          <div class="expense-pie" aria-label="支出のカテゴリ別割合">
+            <div id="expensePieChart" class="pie-chart"></div>
+            <div id="expensePieLegend" class="pie-legend"></div>
+          </div>
+          <p id="expensePieCaption" class="chart-tooltip" aria-live="polite"></p>
+        </div>
       </aside>
 
       <section class="panel">
@@ -445,7 +623,7 @@
       <section class="panel">
         <div class="panel-head">
           <h2>月別推移</h2>
-          <span class="notice">年間管理用</span>
+          <span class="notice">月をダブルクリックで月別集計</span>
         </div>
         <div class="content"><div id="trendList" class="trend-list"></div></div>
       </section>
@@ -546,9 +724,11 @@ PayPay
     let transactions = dedupe(cleanupTransactions(loadRows()));
     let deletions = loadDeletions();
     let selectedCategory = "";
+    let selectedChartCategory = "";
     let cloudSyncTimer = 0;
     let cloudSyncInProgress = false;
     const money = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
+    const chartColors = ["#5fc763", "#95eeee", "#ffc49f", "#ffa798", "#ffd99a", "#6b6b6b", "#8bb7e8", "#c59be8", "#80c7b1", "#e0b067", "#d98faa", "#9eb06f"];
     const els = {
       fileInput: document.getElementById("fileInput"),
       yearFilter: document.getElementById("yearFilter"),
@@ -579,6 +759,13 @@ PayPay
       rulesInput: document.getElementById("rulesInput"),
       tbody: document.getElementById("tbody"),
       categoryList: document.getElementById("categoryList"),
+      expensePieChart: document.getElementById("expensePieChart"),
+      expensePieLegend: document.getElementById("expensePieLegend"),
+      expensePieCaption: document.getElementById("expensePieCaption"),
+      chartLegend: document.getElementById("chartLegend"),
+      categoryTrendChart: document.getElementById("categoryTrendChart"),
+      chartTooltip: document.getElementById("chartTooltip"),
+      chartResetBtn: document.getElementById("chartResetBtn"),
       detailTitle: document.getElementById("detailTitle"),
       trendList: document.getElementById("trendList"),
       incomeTotal: document.getElementById("incomeTotal"),
@@ -643,6 +830,37 @@ PayPay
       selectedCategory = tab.dataset.categoryTab;
       render();
     });
+    els.trendList.addEventListener("dblclick", event => {
+      const row = event.target.closest("[data-trend-month]");
+      if (!row) return;
+      selectTrendMonth(row.dataset.trendMonth);
+    });
+    els.trendList.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const row = event.target.closest("[data-trend-month]");
+      if (!row) return;
+      event.preventDefault();
+      selectTrendMonth(row.dataset.trendMonth);
+    });
+    els.chartLegend.addEventListener("click", event => {
+      const button = event.target.closest("[data-chart-category]");
+      if (!button) return;
+      selectChartCategory(button.dataset.chartCategory);
+    });
+    els.chartResetBtn.addEventListener("click", () => selectChartCategory(""));
+    els.categoryTrendChart.addEventListener("mousemove", event => {
+      const target = event.target.closest("[data-chart-point]");
+      if (!target) return;
+      els.chartTooltip.textContent = `${target.dataset.chartMonth} / ${target.dataset.chartCategory}: ${money.format(Number(target.dataset.chartAmount) || 0)}`;
+    });
+    els.categoryTrendChart.addEventListener("mouseleave", () => {
+      els.chartTooltip.textContent = selectedChartCategory ? `${selectedChartCategory}だけ表示中` : "";
+    });
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(() => renderCategoryTrend()).observe(els.categoryTrendChart);
+    } else {
+      window.addEventListener("resize", renderCategoryTrend);
+    }
     els.tbody.addEventListener("change", event => {
       const select = event.target.closest("[data-category-id]");
       if (!select) return;
@@ -850,8 +1068,8 @@ PayPay
 
     function descriptionFor(cells) {
       const parts = [
-        valueFor(cells, ["description", "摘要", "内容", "詳細", "店名", "利用店名", "ご利用店名", "加盟店名", "取引内容", "商品名", "件名"]),
-        valueFor(cells, ["摘要内容", "明細内容", "取引先", "相手先"])
+        valueFor(cells, ["description", "摘要", "内容", "詳細", "店名", "利用店名", "ご利用店名", "ご利用先", "加盟店名", "取引内容", "商品名", "件名"]),
+        valueFor(cells, ["摘要内容", "明細内容", "取引先", "相手先", "備考"])
       ];
       return [...new Set(parts.map(clean).filter(Boolean))].join(" ");
     }
@@ -919,6 +1137,12 @@ PayPay
       if (ymd) return `${ymd[1]}-${pad(ymd[2])}-${pad(ymd[3])}`;
       const compact = text.match(/^(\d{4})(\d{2})(\d{2})$/);
       if (compact) return `${compact[1]}-${compact[2]}-${compact[3]}`;
+      const shortCompact = text.match(/^(\d{2})(\d{2})(\d{2})$/);
+      if (shortCompact) {
+        const year = Number(shortCompact[1]);
+        const century = year >= 70 ? 1900 : 2000;
+        return `${century + year}-${shortCompact[2]}-${shortCompact[3]}`;
+      }
       const slash = text.match(/(\d{1,2})[\/\-.月](\d{1,2})/);
       if (slash) return `${new Date().getFullYear()}-${pad(slash[1])}-${pad(slash[2])}`;
       const date = new Date(text);
@@ -943,6 +1167,7 @@ PayPay
 
     function inferSource(filename, description, headers, cells) {
       const text = `${filename} ${description} ${headers.join(" ")} ${cells.map(cell => cell.value).join(" ")}`.toLowerCase();
+      if (text.includes("aeon") || text.includes("オーパス") || text.includes("イオンカード")) return "AEONカード";
       if (text.includes("rakuten") || text.includes("楽天") || text.includes("ラクテン")) return "楽天カード";
       if (text.includes("paypay") || text.includes("ペイペイ")) return "PayPay";
       if (text.includes("amazon") || text.includes("アマゾン")) return "Amazon";
@@ -962,6 +1187,7 @@ PayPay
 
     function categorize(row) {
       const target = `${row.description} ${row.source} ${row.filename}`.toLowerCase();
+      if (isVehicleUseText(normalizeText(row.description))) return "交通";
       if (isCreditCompanyText(normalizeText(target))) return "自動車";
       const hit = parseRules().find(rule => rule.words.some(word => target.includes(word)));
       if (hit) return hit.category;
@@ -1194,6 +1420,20 @@ PayPay
       if (months.includes(selected)) els.monthFilter.value = selected;
     }
 
+    function selectTrendMonth(month) {
+      if (!month || !/^\d{4}-\d{2}$/.test(month)) return;
+      const year = month.slice(0, 4);
+      if ([...els.yearFilter.options].some(option => option.value === year)) {
+        els.yearFilter.value = year;
+        updateMonthOptionsForYear();
+      }
+      if ([...els.monthFilter.options].some(option => option.value === month)) {
+        els.monthFilter.value = month;
+      }
+      selectedCategory = "";
+      render();
+    }
+
     function render() {
       const categoryRows = filteredRows(false);
       const rows = filteredRows();
@@ -1206,6 +1446,8 @@ PayPay
       els.sourceCount.textContent = rows.length ? `${new Set(rows.map(r => r.filename)).size}ファイル / ${rows.length}件 表示中` : "表示明細なし";
       els.detailTitle.textContent = selectedCategory ? `${selectedCategory}の明細` : "すべての明細";
       renderCategories(categoryRows);
+      renderExpensePie(categoryRows);
+      renderCategoryTrend();
       renderTrend();
       renderTable(rows);
     }
@@ -1239,6 +1481,215 @@ PayPay
       `).join("");
     }
 
+    function renderExpensePie(rows) {
+      const totals = new Map();
+      rows.forEach(row => {
+        if (row.amount >= 0) return;
+        totals.set(row.category, (totals.get(row.category) || 0) + Math.abs(row.amount));
+      });
+      const entries = [...totals.entries()]
+        .filter(([, amount]) => amount > 0)
+        .sort((a, b) => b[1] - a[1]);
+      const total = entries.reduce((sum, [, amount]) => sum + amount, 0);
+
+      if (!total) {
+        els.expensePieChart.innerHTML = `<div class="empty">支出の円グラフはまだありません。</div>`;
+        els.expensePieLegend.innerHTML = "";
+        els.expensePieCaption.textContent = "";
+        return;
+      }
+
+      const cx = 130;
+      const cy = 130;
+      const radius = 104;
+      let angle = -90;
+      const slices = entries.map(([category, amount], index) => {
+        const ratio = amount / total;
+        const nextAngle = angle + ratio * 360;
+        const path = pieSlicePath(cx, cy, radius, angle, nextAngle);
+        const color = chartColor(index);
+        angle = nextAngle;
+        return `<path class="pie-slice" d="${path}" fill="${color}">
+          <title>${escapeHtml(category)} ${money.format(amount)} ${Math.round(ratio * 1000) / 10}%</title>
+        </path>`;
+      }).join("");
+
+      els.expensePieChart.innerHTML = `
+        <svg viewBox="0 0 260 260" role="img" aria-label="支出のカテゴリ別割合">
+          ${slices}
+          <circle cx="${cx}" cy="${cy}" r="48" fill="#fff" opacity="0.92"></circle>
+          <text class="pie-center-label" x="${cx}" y="${cy - 4}">${money.format(total)}</text>
+          <text class="pie-center-sub" x="${cx}" y="${cy + 16}">支出合計</text>
+        </svg>
+      `;
+      els.expensePieLegend.innerHTML = entries.map(([category, amount], index) => {
+        const ratio = amount / total;
+        return `
+          <div class="pie-legend-row">
+            <span class="chart-swatch" style="background:${chartColor(index)}"></span>
+            <span class="pie-legend-name">${escapeHtml(category)}</span>
+            <span class="pie-legend-value">${money.format(amount)} / ${Math.round(ratio * 1000) / 10}%</span>
+          </div>
+        `;
+      }).join("");
+      els.expensePieCaption.textContent = `左のカテゴリ別集計に表示中の支出 ${money.format(total)} の割合です。`;
+    }
+
+    function pieSlicePath(cx, cy, radius, startAngle, endAngle) {
+      if (endAngle - startAngle >= 359.999) {
+        return `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} Z`;
+      }
+      const start = polarPoint(cx, cy, radius, startAngle);
+      const end = polarPoint(cx, cy, radius, endAngle);
+      const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+      return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+    }
+
+    function polarPoint(cx, cy, radius, angle) {
+      const radians = (angle * Math.PI) / 180;
+      return {
+        x: cx + radius * Math.cos(radians),
+        y: cy + radius * Math.sin(radians)
+      };
+    }
+
+    function selectChartCategory(category) {
+      selectedChartCategory = selectedChartCategory === category ? "" : category;
+      selectedCategory = selectedChartCategory;
+      render();
+    }
+
+    function renderCategoryTrend() {
+      const year = els.yearFilter.value;
+      const baseRows = transactions.filter(row => {
+        const yearOk = year === "all" || row.date.startsWith(year);
+        return yearOk && row.amount < 0;
+      });
+      const months = [...new Set(baseRows.map(row => row.date.slice(0, 7)))].sort();
+      const totals = new Map();
+      baseRows.forEach(row => {
+        totals.set(row.category, (totals.get(row.category) || 0) + Math.abs(row.amount));
+      });
+      const categories = [...totals.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([category]) => category);
+
+      if (selectedChartCategory && !categories.includes(selectedChartCategory)) {
+        selectedChartCategory = "";
+      }
+
+      if (!months.length || !categories.length) {
+        els.chartLegend.innerHTML = "";
+        els.categoryTrendChart.innerHTML = `<div class="empty">カテゴリ別推移はまだありません。</div>`;
+        els.chartTooltip.textContent = "";
+        return;
+      }
+
+      els.chartLegend.innerHTML = categories.map((category, index) => `
+        <button type="button" data-chart-category="${escapeHtml(category)}" aria-pressed="${selectedChartCategory === category}">
+          <span class="chart-swatch" style="background:${chartColor(index)}"></span>${escapeHtml(category)}
+        </button>
+      `).join("");
+
+      const shownCategories = selectedChartCategory ? [selectedChartCategory] : categories;
+      const monthCategoryTotals = new Map();
+      baseRows.forEach(row => {
+        const key = `${row.date.slice(0, 7)}|${row.category}`;
+        monthCategoryTotals.set(key, (monthCategoryTotals.get(key) || 0) + Math.abs(row.amount));
+      });
+
+      const width = Math.max(320, Math.round(els.categoryTrendChart.clientWidth || 900));
+      const height = width < 520 ? 330 : 380;
+      const margin = { top: 18, right: 20, bottom: width < 520 ? 70 : 52, left: 72 };
+      const plotWidth = Math.max(1, width - margin.left - margin.right);
+      const plotHeight = Math.max(1, height - margin.top - margin.bottom);
+      const monthTotals = months.map(month => shownCategories.reduce((sum, category) => sum + amountFor(monthCategoryTotals, month, category), 0));
+      const maxValue = Math.max(1, ...monthTotals);
+      const paddedMax = niceMax(maxValue);
+      const xFor = index => margin.left + (months.length === 1 ? plotWidth / 2 : (plotWidth * index) / (months.length - 1));
+      const yFor = value => margin.top + plotHeight - (value / paddedMax) * plotHeight;
+      const yTicks = makeTicks(paddedMax, 5);
+      const xStep = Math.max(1, Math.ceil(months.length / (width < 520 ? 5 : 10)));
+      const visibleMonthLabels = months.filter((_, index) => index % xStep === 0 || index === months.length - 1);
+
+      let accum = Object.fromEntries(months.map(month => [month, 0]));
+      const areas = shownCategories.map(category => {
+        const index = categories.indexOf(category);
+        const topPoints = months.map((month, monthIndex) => {
+          const amount = amountFor(monthCategoryTotals, month, category);
+          const bottom = accum[month];
+          accum[month] += amount;
+          return { month, category, amount, x: xFor(monthIndex), y: yFor(bottom + amount), bottomY: yFor(bottom) };
+        });
+        const path = areaPath(topPoints);
+        return `<path class="chart-area" d="${path}" fill="${chartColor(index)}" opacity="${selectedChartCategory ? "0.82" : "0.62"}"></path>`;
+      }).join("");
+
+      const points = [];
+      let stacked = Object.fromEntries(months.map(month => [month, 0]));
+      shownCategories.forEach(category => {
+        const index = categories.indexOf(category);
+        months.forEach((month, monthIndex) => {
+          const amount = amountFor(monthCategoryTotals, month, category);
+          stacked[month] += amount;
+          if (!amount) return;
+          points.push(`
+            <circle class="chart-point" data-chart-point data-chart-month="${escapeHtml(month)}" data-chart-category="${escapeHtml(category)}" data-chart-amount="${amount}" cx="${xFor(monthIndex)}" cy="${yFor(stacked[month])}" r="${selectedChartCategory ? 4 : 3}" fill="${chartColor(index)}"></circle>
+          `);
+        });
+      });
+
+      els.categoryTrendChart.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="カテゴリ別の月別支出推移">
+          <rect class="chart-frame" x="${margin.left}" y="${margin.top}" width="${plotWidth}" height="${plotHeight}" fill="none"></rect>
+          ${yTicks.map(tick => `
+            <line class="chart-grid" x1="${margin.left}" x2="${margin.left + plotWidth}" y1="${yFor(tick)}" y2="${yFor(tick)}"></line>
+            <text class="chart-label" x="${margin.left - 8}" y="${yFor(tick) + 4}" text-anchor="end">${shortMoney(tick)}</text>
+          `).join("")}
+          ${visibleMonthLabels.map(month => {
+            const index = months.indexOf(month);
+            return `<text class="chart-label" x="${xFor(index)}" y="${height - 18}" text-anchor="middle" transform="${width < 520 ? `rotate(-35 ${xFor(index)} ${height - 18})` : ""}">${month}</text>`;
+          }).join("")}
+          <text class="chart-label" x="${margin.left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">月</text>
+          <text class="chart-label" x="16" y="${margin.top + plotHeight / 2}" text-anchor="middle" transform="rotate(-90 16 ${margin.top + plotHeight / 2})">支出</text>
+          ${areas}
+          ${points.join("")}
+        </svg>
+      `;
+      els.chartTooltip.textContent = selectedChartCategory ? `${selectedChartCategory}だけ表示中` : "";
+    }
+
+    function amountFor(map, month, category) {
+      return map.get(`${month}|${category}`) || 0;
+    }
+
+    function chartColor(index) {
+      return chartColors[((index % chartColors.length) + chartColors.length) % chartColors.length];
+    }
+
+    function niceMax(value) {
+      const power = Math.pow(10, Math.floor(Math.log10(value)));
+      const scaled = value / power;
+      const nice = scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+      return nice * power;
+    }
+
+    function makeTicks(max, count) {
+      return Array.from({ length: count + 1 }, (_, index) => Math.round((max * index) / count));
+    }
+
+    function shortMoney(value) {
+      if (value >= 10000) return `${Math.round(value / 10000)}万`;
+      return money.format(value);
+    }
+
+    function areaPath(points) {
+      if (!points.length) return "";
+      const top = points.map((point, index) => `${index ? "L" : "M"}${point.x},${point.y}`).join(" ");
+      const bottom = [...points].reverse().map(point => `L${point.x},${point.bottomY}`).join(" ");
+      return `${top} ${bottom} Z`;
+    }
+
     function renderTrend() {
       const year = els.yearFilter.value;
       const baseRows = transactions.filter(row => year === "all" || row.date.startsWith(year));
@@ -1248,10 +1699,10 @@ PayPay
         const income = rows.filter(row => row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
         const expense = rows.filter(row => row.amount < 0).reduce((sum, row) => sum + Math.abs(row.amount), 0);
         return `
-          <div class="trend-row">
+          <button type="button" class="trend-row" data-trend-month="${escapeHtml(month)}">
             <div><strong>${month}</strong><br><span>収入 ${money.format(income)} / 支出 ${money.format(expense)}</span></div>
             <strong class="amount ${income - expense >= 0 ? "income" : "expense"}">${money.format(income - expense)}</strong>
-          </div>
+          </button>
         `;
       }).join("") : `<div class="empty">月別推移はまだありません。</div>`;
     }
@@ -1310,8 +1761,7 @@ PayPay
       return [
         row.date,
         Math.round(Number(row.amount) || 0),
-        normalizeText(row.description),
-        normalizeText(row.source)
+        row.type || (Number(row.amount) >= 0 ? "income" : "expense")
       ].join("|");
     }
 
@@ -1340,6 +1790,14 @@ PayPay
         text.includes("aeonfinancial") ||
         (text.includes("イオン") && (text.includes("フイナンシヤル") || text.includes("フィナンシャル") || text.includes("financial")))
       );
+    }
+
+    function isVehicleUseText(text) {
+      return [
+        "etc", "高速", "有料道路", "ガソリン", "給油", "コスモ石油", "コスモss",
+        "eneos", "エネオス", "出光", "apollostation", "アポロステーション",
+        "昭和シェル", "キグナス", "太陽石油", "solato"
+      ].some(word => text.includes(normalizeText(word)));
     }
 
     function loadRows() {
